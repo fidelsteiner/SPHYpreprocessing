@@ -39,9 +39,12 @@ path_output <- 'F:\\PhD\\Research\\SPHY\\trisulitestSPHY\\Code\\SPHY-master\\inp
 path_RGI <- 'F:\\PhD\\GeoSpatialData\\RGI60_Asia'                                             #folder with (RGI 6.0)
 path_debris <- 'F:\\PhD\\GeoSpatialData\\DCG_Scherler\\S2_2015-2017_NDSI\\S2_2015-2017_NDSI'  # folder debris data (Scherler 2018)
 path_thick <- 'F:\\PhD\\GeoSpatialData\\IceThickness_Farinotti\\RGI60-15\\RGI60-15'           # folder with ice thickness data (Farinotti 2019)
+<<<<<<< HEAD
 
 RGI_filename <- '15_rgi60_SouthAsiaEast.shp'
 RGI_debris_filename <- '15_rgi60_SouthAsiaEast_S2_DC_2015_2017_NDSI.shp'
+=======
+>>>>>>> 22665557be2d1dedc878c79363bbf1bb93a276c9
 
 ##########################
 
@@ -57,6 +60,7 @@ projection(dem) <- projec
 domain_deg <- projectRaster(domain,crs = '+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0')
 ##########################
 
+<<<<<<< HEAD
 ##########################
 # Load RGI data
 ogrInfo(path_RGI&'\\'&RGI_filename)
@@ -71,6 +75,21 @@ RGI60_15_debris <- spTransform(RGI60_15_debris, projec)
 # Restrict the datasets to the domain
 sub_15 <- subset(RGI60_15, CenLon >= extent(domain_deg)[1] & CenLon <= extent(domain_deg)[2] & CenLat >= extent(domain_deg)[3] & CenLat <= extent(domain_deg)[4])
 sub_15_debris <- subset(RGI60_15_debris, CenLon >= extent(domain_deg)[1] & CenLon <= extent(domain_deg)[2] & CenLat >= extent(domain_deg)[3] & CenLat <= extent(domain_deg)[4])
+=======
+# Read in the RGI/debris datasets
+ogrInfo(path_RGI&'\\15_rgi60_SouthAsiaEast.shp')
+RGI60_15<-readOGR(dsn=path_RGI&'\\15_rgi60_SouthAsiaEast.shp')
+ogrInfo(path_debris&'\\15_rgi60_SouthAsiaEast_S2_DC_2015_2017_NDSI.shp')
+RGI60_15_debris<-readOGR(dsn=path_debris&'\\15_rgi60_SouthAsiaEast_S2_DC_2015_2017_NDSI.shp')
+projection(RGI60_15_debris) <- projection(RGI60_15)
+
+  RGI60_15 <- spTransform(RGI60_15, projec)
+  RGI60_15_debris <- spTransform(RGI60_15_debris, projec)
+  
+  # Restrict the datasets to the domain
+  sub_15 <- subset(RGI60_15, CenLon >= extent(domain_deg)[1] & CenLon <= extent(domain_deg)[2] & CenLat >= extent(domain_deg)[3] & CenLat <= extent(domain_deg)[4])
+  sub_15_debris <- subset(RGI60_15_debris, CenLon >= extent(domain_deg)[1] & CenLon <= extent(domain_deg)[2] & CenLat >= extent(domain_deg)[3] & CenLat <= extent(domain_deg)[4])
+>>>>>>> 22665557be2d1dedc878c79363bbf1bb93a276c9
   
 # Find ice thickness for all glaciers and combine into 1 raster
 mergeRaster <- domain * 0
@@ -86,6 +105,7 @@ mergeRaster <- domain * 0
     }
   }
   
+<<<<<<< HEAD
 # discrad ice thickness < 2m
 mergeRaster[mergeRaster < 2] <- 0
 ########################## 
@@ -105,6 +125,26 @@ r_glaciermask_debris[is.na(r_glaciermask_debris)] <- 0
 #writeRaster(r_glaciermask, filename=file.path(path_maps, "glacID"), format="GTiff",overwrite=T) 
 writeRaster(r_glaciermask_cover, file.path(path_maps, "glacfrac.asc"), format="ascii")
 writeRaster(r_glaciermask, file.path(path_maps, "glacID.asc"), format="ascii")
+=======
+  # discrad ice thickness < 2m
+  mergeRaster[mergeRaster < 2] <- 0
+  
+  # Rasterize all datasets
+  r_glaciermask_cover <- rasterize(sub_15, domain,getCover=TRUE) # relative cover of glacier over pixel
+  r_glaciermask <- rasterize(sub_15, domain,mask=F) # Individual glacier numbers (only pixels that lie on the polygon)
+  r_glaciermask[is.na(r_glaciermask)] <- 0
+  
+  r_glaciermask_debris_cover <- rasterize(sub_15_debris, domain,getCover=TRUE) # relative cover of cliff over pixel
+  r_glaciermask_debris <- rasterize(sub_15_debris, domain,mask=F) # Individual cliff numbers (only pixels that lie on the polygon)
+  r_glaciermask_debris[is.na(r_glaciermask_debris)] <- 0
+  
+  # Save all rasters
+  writeRaster(r_glaciermask_cover, filename=file.path(path_maps, "glacfrac_1"), format="GTiff",overwrite=T)
+  writeRaster(r_glaciermask, filename=file.path(path_maps, "glacID"), format="GTiff",overwrite=T) 
+  
+  writeRaster(r_glaciermask_debris_cover, filename=file.path(path_maps, "debrisfrac"), format="GTiff",overwrite=T)
+  writeRaster(r_glaciermask_debris, filename=file.path(path_maps, "glacID_debris"), format="GTiff",overwrite=T) 
+>>>>>>> 22665557be2d1dedc878c79363bbf1bb93a276c9
 
 writeRaster(r_glaciermask_cover - r_glaciermask_debris_cover, file.path(path_maps, "glacfrac_ci.asc"), format="ascii")
 writeRaster(r_glaciermask_debris, file.path(path_maps, "glacID_debris.asc"), format="ascii")
@@ -138,6 +178,7 @@ writeRaster(mergeRaster, file.path(path_maps, "icedepth.asc"), format="ascii")
   FRAC_GLAC <- r_glaciermask_cover[which(r_glaciermask[]>0)]
   
   ICE_DEPTH <- mergeRaster[which(r_glaciermask[]>0)]
+<<<<<<< HEAD
  
   
 # Save Table for SPHY
@@ -149,6 +190,17 @@ write.table(glac_table, file = path_output&'\\glac_table.csv', append = FALSE,co
 
 ##########################
 # Visualize domain data
+=======
+  
+  
+  # Save Table for SPHY
+  glac_table <- cbind(U_ID,MOD_ID,GLAC_ID,MOD_H,GLAC_H,FRAC_DEBRIS,DEBRIS,FRAC_GLAC,ICE_DEPTH)
+  glac_table <- glac_table[-which(is.na(MOD_H)),]
+  colnames(glac_table) <- c('U_ID','MOD_ID','GLAC_ID','MOD_H','GLAC_H','FRAC_DEBRIS','DEBRIS','FRAC_GLAC','ICE_DEPTH')
+  write.table(glac_table, file = path_output&'\\glac_table.csv', append = FALSE,col.names = T,row.names = F,sep=',')
+  
+  # Save overview image
+>>>>>>> 22665557be2d1dedc878c79363bbf1bb93a276c9
   png(file=path_output&'\\Domain_Glaciers.png', res = 160,width=dim(domain)[1]*2,height=dim(domain)[2]*2)
   par(mar=c(4,5,2,2),cex.lab=1.5,cex.axis=1.5)
   par(mfrow=c(1))
