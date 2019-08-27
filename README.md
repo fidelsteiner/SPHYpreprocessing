@@ -7,4 +7,4 @@ Code for precprocessing Spatial Data for the SPHY model (see https://github.com/
 
 # Snow Data Preprocessing (SPHY_snowmap.R)
 
-![Alt text](Domain_Snowcover.png?raw=true "Title")
+![Alt text](Domain_SnowCover.png?raw=true "Title")
