@@ -10,6 +10,7 @@
 
 # Output:
 # - Snowcover: ascii files with 0 = No Snow, 1 = Snow and NA = NO DATA/CLOUDS/UNKNOWN - needs to be converted into .map files by 
+# asc2map --clone clone.map -S -a -m -9999 ---.asc ---.map
 #
 # Created:          2019/08/15
 # Latest Revision:  2019/08/22
