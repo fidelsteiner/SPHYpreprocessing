@@ -32,18 +32,29 @@ library(pacman)
 p_load(rgdal,rgeos,maptools,raster)
 
 ########################## 
-# PATHS FOR GLACIER RAW DATA (adapt and make sure all data is available)
-path_maps <- 'F:\\PhD\\Research\\SPHY\\trisulitestSPHY\\Code\\SPHY-master\\input'             # Folder of SPHY input data
-path_output <- 'F:\\PhD\\Research\\SPHY\\trisulitestSPHY\\validation\\snow'             # Folder for all outputs
-path_snowdata <- 'F:\\PhD\\Research\\SPHY\\trisulitestSPHY\\RawData\\Trisuli\\snow\\MODIS_maximum_snow_extent'           # folder with snow data, needs to be a list of folders that have as a name the numerical time and contain a tiff
+# Define Paths and Projection
+##########################
+projec_lambers <- "+proj=laea +lat_0=28 +lon_0=95 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+projec_utm <- '+proj=utm +zone=45N +datum=WGS84'
+
+projec <- projec_utm
+
+# PATHS  (adapt and make sure all data is available)
+path_maps <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\Code\\SPHY-master\\input'        # Folder of SPHY input data (used as output folder)
+path_output <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\figures'                       # Folder for all figures
+path_snow_output <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\validation\\snow'
+path_ccidata <- 'F:\\PhD\\Research\\SPHY\\data\\landuse\\cci-landcover-2015'          # Folder for raw landcover data
+filename <- 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.tif'                          # CCI file name
+path_RGI <- 'F:\\PhD\\GeoSpatialData\\RGI60_Asia'                                     # Folder for RGI glacier outlines
+RGI_filename <- '15_rgi60_SouthAsiaEast.shp'                                          # RGI filename
+
+path_snowdata <- 'F:\\PhD\\Research\\SPHY\\data\\Trisuli\\snow\\MODIS_maximum_snow_extent'           # folder with snow data, needs to be a list of folders that have as a name the numerical time and contain a tiff
 
 # Specify the satelite data used (currently supported Modis 8day composite for snow cover extent)
 satellite <- 'modis8day'
 ##########################
-
-##########################
 # Load SPHY data
-projec<-'+proj=utm +zone=45N +datum=WGS84'
+##########################
 domain <- raster(paste(path_maps,'\\clone.map',sep=''))   # Load the domain
 projection(domain) <- projec
 
@@ -54,10 +65,10 @@ domain_deg <- projectRaster(domain,crs = '+proj=longlat +datum=WGS84 +no_defs +e
 
 modID_raster <- domain
 modID_raster[seq(1,dim(domain)[1]*dim(domain)[2],1)] <- seq(1,dim(domain)[1]*dim(domain)[2],1)
-##########################
 
 ##########################
 # Load Snow Data for each time step
+##########################
 
 listFil <- list.files(path = path_snowdata, pattern = NULL, all.files = T,
            full.names = T, recursive = F,
@@ -73,34 +84,30 @@ for (i in 1:length(listDate)){
   getTiff <- list.files(path = paste(path_snowdata,'\\',listDate[i],sep=''), pattern = "\\.tif$",full.names = T)
   snowmap <- raster(getTiff)        # Load the extent map
   projection(snowmap) <- projec
-  snowmap_resampled <- resample(snowmap,domain)
+  snowmap_resampled <- resample(snowmap,dem)
+  snowmap_resampled <- mask(snowmap_resampled,dem)
   
   switch(satellite,
          'modis8day' = {
-           snowmap_resampled[snowmap_resampled <= 0] <- NA # no data
-           snowmap_resampled[snowmap_resampled==200] <- 1 # Snow
-           snowmap_resampled[snowmap_resampled==25] <- 0  # no snow
-           snowmap_resampled[snowmap_resampled > 1] <- NA # no data
-           
-           # make cells surrounded by snow snow covered (TBD!)
-           #allsnow <- which(snowmap_resampled[]==1)
-           #for(sc in 1:length(allsnow)){
-           #a<-adjacent(snowmap_resampled, cells = allsnow[sc],directions=8, sorted=TRUE)
-           #if(all(is.na(snowmap_resampled[a[,2]]))){snowmap_resampled[a[1,1]] <- NA}
-           #}
-           
+           snowmap_resampled2 <- snowmap_resampled
+           snowmap_resampled[snowmap_resampled>=190] <- 1 # Snow
+           snowmap_resampled[snowmap_resampled>=22 & snowmap_resampled<=27] <- 0  # no snow
+           snowmap_resampled[snowmap_resampled>0 & snowmap_resampled<1] <- NA
+           snowmap_resampled[snowmap_resampled>1] <- NA
+
            # Create new folder
-           ifelse(!dir.exists(file.path(path_output,paste('\\',listDate[i],sep=''))), dir.create(file.path(path_output,paste('\\',listDate[i],sep=''))), FALSE)
+           ifelse(!dir.exists(file.path(path_output,paste('\\',listDate[i],sep=''))), dir.create(file.path(path_snow_output,paste('\\',listDate[i],sep=''))), FALSE)
            
            # Save all rasters (GTiff is an option but ascii files are needed for PCRaster/SPHY)
-           writeRaster(snowmap_resampled, file.path(file.path(path_output,paste('\\',listDate[i],sep='')), "snowcover.asc"), format="ascii",overwrite=TRUE)
+           writeRaster(snowmap_resampled, file.path(file.path(path_snow_output,paste('\\',listDate[i],sep='')), "snowcover.asc"), format="ascii",overwrite=TRUE)
          })
 }
 
 ##########################
 # Visualize domain data
+##########################
 pal <- colorRampPalette(c("red","blue"))
-  png(file=path_output&'\\Domain_SnowCover.png', res = 160,width=dim(domain)[1]*2,height=dim(domain)[2]*2)
+  png(file=path_output&'\\Domain_SnowCover.png', res = 160,width=dim(dem)[2]*2,height=dim(dem)[1]*2)
   par(mar=c(4,5,2,2),cex.lab=1.5,cex.axis=1.5)
   #par(mfrow=c(1))
   layout(matrix(c(1), nrow = 1, ncol = 1, byrow = FALSE))

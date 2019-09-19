@@ -10,7 +10,7 @@
 # Uses additional input for bare rock surfaces if available
 
 # Output:
-# ascii file  - needs to be converted into .map files by 
+# ascii file for landuse  - needs to be converted into .map files by 
 # asc2map --clone clone.map -S -a -m -9999 ---.asc ---.map
 #
 # Created:          2019/08/15
@@ -34,20 +34,20 @@ p_load(rgdal,rgeos,maptools,raster,rasterVis)
 
 ##########################
 # SPECIFY FILENAMES AND DESIRED PROJECTION
-RGI_filename <- '15_rgi60_SouthAsiaEast.shp' 
-
+##########################
 # Define Projection
 projec_lambers <- "+proj=laea +lat_0=28 +lon_0=95 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
 projec_utm <- '+proj=utm +zone=45N +datum=WGS84'
 
 projec <- projec_utm
 
-# PATHS FOR GLACIER RAW DATA (adapt and make sure all data is available)
-path_maps <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\Code\\SPHY-master\\input'             # Folder of SPHY input data
-path_output <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\figures'             # Folder for all figures
-path_ccidata <- 'F:\\PhD\\Research\\SPHY\\data\\landuse\\cci-landcover-2015'
-filename <- 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.tif'                # CCI file name
-path_RGI <- 'F:\\PhD\\GeoSpatialData\\RGI60_Asia' 
+# PATHS  (adapt and make sure all data is available)
+path_maps <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\Code\\SPHY-master\\input'        # Folder of SPHY input data (used as output folder)
+path_output <- 'F:\\PhD\\Research\\SPHY\\SPHYLangtang\\figures'                       # Folder for all figures
+path_ccidata <- 'F:\\PhD\\Research\\SPHY\\data\\landuse\\cci-landcover-2015'          # Folder for raw landcover data
+filename <- 'ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.tif'                          # CCI file name
+path_RGI <- 'F:\\PhD\\GeoSpatialData\\RGI60_Asia'                                     # Folder for RGI glacier outlines
+RGI_filename <- '15_rgi60_SouthAsiaEast.shp'                                          # RGI filename
 
 # if available, provide .shp for catchment outline for visualisation, set 'cSHP' to 1
 cSHP <- 1
@@ -56,15 +56,16 @@ file_catchmentoutline <- 'F:\\PhD\\Research\\SPHY\\CatchmentMapping\\OutlineLang
 # if available, provide raster file with data where no soil available, set 'bare' to 1
 bare <- 1
 file_barerock <- 'F:\\PhD\\Research\\SPHY\\data\\barerock_langtang100m.tif'
-##########################
 
 ##########################
 # Load SPHY data
+##########################
 domain <- raster(paste(path_maps,'\\clone.map',sep=''))   # Load the domain
 projection(domain) <- projec
 
 dem <- raster(paste(path_maps,'\\dem.map',sep=''))        # Load the DEM
 projection(dem) <- projec
+contourDEM <- rasterToContour(dem,levels = pretty(range(dem[], na.rm = TRUE), 10))
 
 domain_deg <- projectRaster(domain,crs = '+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0')
 
@@ -77,7 +78,8 @@ if(bare ==1){
   bareRaster <- resample(bareRaster,domain)
 }
 ##########################
-# Load RGI data
+# Load RGI and other catchment data
+##########################
 ogrInfo(path_RGI&'\\'&RGI_filename)
 RGI60_15<-readOGR(dsn=path_RGI&'\\'&RGI_filename)
 RGI60_15 <- spTransform(RGI60_15, projec)
@@ -92,7 +94,8 @@ catch<-readOGR(dsn=file_catchmentoutline)
 catch <- spTransform(catch, projec)
 }
 ##########################
-# Load global CCI data
+# Load global CCI data and format to scale and save
+##########################
 
 cci_global <- raster(paste(path_ccidata,'\\',filename,sep=''))
 cci_local <- crop(cci_global,domain_deg)
@@ -130,16 +133,16 @@ tar[["landcover"]]<-c("no data / 0","cropland / 1", "trees / 1","shrub / 1.05","
 levels(cci_local_fac)<-tar
 
 writeRaster(cci_local, file.path(path_maps, "luse.asc"), format="ascii",overwrite=T)
+writeRaster(modID_raster, file.path(path_maps, "modID.asc"), format="ascii",overwrite=T)
 
 ##########################
 # Visualize domain data
-
-  png(file=path_output&'\\landuse.png', res = 160,width=dim(domain)[2]*2,height=dim(domain)[1]*2)
+  png(file=path_output&'\\landuse.png', res = 160,width=dim(dem)[2]*2,height=dim(dem)[1]*2)
   par(mar=c(4,5,2,2),cex.lab=1,cex.axis=1)
   #par(mfrow=c(1))
   layout(matrix(c(1), nrow = 1, ncol = 1, byrow = FALSE))
   if(cSHP == 1) {
-    levelplot(cci_local_fac, col.regions=brewer.pal(12,"Set3"),xlab="Easting [m]",ylab="Northing [m]") + layer(sp.polygons(catch))
+    levelplot(cci_local_fac, col.regions=brewer.pal(12,"Set3"),xlab="Easting [m]",ylab="Northing [m]") + layer(sp.polygons(catch)) + layer(sp.polygons(contourDEM))
   } else{
     levelplot(cci_local_fac, col.regions=brewer.pal(12,"Set3"),xlab="Easting [m]",ylab="Northing [m]")
   }
