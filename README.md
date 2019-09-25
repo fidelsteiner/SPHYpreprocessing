@@ -1,4 +1,4 @@
-# SPHYcode
+# SPHYpreprocessing
 Code for precprocessing Spatial Data for the SPHY model (see https://github.com/FutureWater/SPHY)
 
 # Glacier Data Preprocessing (SPHY_glacmap.R)
