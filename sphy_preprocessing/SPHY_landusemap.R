@@ -69,6 +69,9 @@ contourDEM <- rasterToContour(dem,levels = pretty(range(dem[], na.rm = TRUE), 10
 
 domain_deg <- projectRaster(domain,crs = '+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0')
 
+dem_lat <- domain
+dem_lat[seq(1,dim(domain)[1]*dim(domain)[2],1)] <- coordinates(domain_deg)[seq(1,dim(domain)[1]*dim(domain)[2],1),2]
+
 modID_raster <- domain
 modID_raster[seq(1,dim(domain)[1]*dim(domain)[2],1)] <- seq(1,dim(domain)[1]*dim(domain)[2],1)
 
@@ -134,6 +137,7 @@ levels(cci_local_fac)<-tar
 
 writeRaster(cci_local, file.path(path_maps, "luse.asc"), format="ascii",overwrite=T)
 writeRaster(modID_raster, file.path(path_maps, "modID.asc"), format="ascii",overwrite=T)
+writeRaster(dem_lat, file.path(path_maps, "latitude.asc"), format="ascii",overwrite=T)
 
 ##########################
 # Visualize domain data
